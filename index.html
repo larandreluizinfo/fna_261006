@@ -142,10 +142,10 @@ function genWorld(){
 }
 function reset(){
   genWorld();
-  player={x:W/2+0.5, y:H/2+0.5, a:-Math.PI/2, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0, hero};
-  // Companheiro: se você é Lilo, Stitch te segue (e vice-versa)
+  player={x:W/2+0.5, y:H/2+0.5, a:-Math.PI/2, dirX:0, dirY:-1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0, hero};
+  // Companheiro nasce ao lado (visível na 1ª pessoa)
   let bkind = hero==='lilo' ? 'stitch' : 'lilo';
-  buddy={x:player.x-1, y:player.y, kind:bkind, face:0, atkCd:0};
+  buddy={x:player.x+0.9, y:player.y+0.9, kind:bkind, face:0, atkCd:0};
   enemies=[]; parts=[]; torches=[];
   day=1; timeOfDay=0.25; score=0; shake=0; tool='mao'; hasAxe=false; hasSword=false;
   updateHUD();
@@ -298,11 +298,17 @@ function loop(ts){
       if(player.hp<=0){ gameOver(); } }
   }
   enemies=enemies.filter(e=>!e.dead);
-  // companheiro Lilo/Stitch segue e ajuda a atacar
+  // companheiro anda AO LADO (ombro direito) para aparecer na 1ª pessoa
   if(buddy){
     buddy.face+=dt*8; buddy.atkCd-=dt;
-    let dx=player.x-buddy.x, dy=player.y-buddy.y, d=Math.hypot(dx,dy)||1;
-    if(d>1.2){ let sp=4.6*dt; buddy.x+=dx/d*sp; buddy.y+=dy/d*sp; }
+    const fx0=player.dirX, fy0=player.dirY;
+    const tx=player.x + fx0*0.9 + (-fy0)*0.9;
+    const ty=player.y + fy0*0.9 + (fx0)*0.9;
+    let dx=tx-buddy.x, dy=ty-buddy.y, d=Math.hypot(dx,dy)||1;
+    if(d>0.08){ const sp=Math.min(d,1)*5*dt+d*2*dt; let nx=buddy.x+dx/d*sp, ny=buddy.y+dy/d*sp;
+      if(!solid(tileAt(nx,buddy.y))) buddy.x=nx;
+      if(!solid(tileAt(buddy.x,ny))) buddy.y=ny;
+    }
     // ataca inimigo mais próximo do jogador
     if(buddy.atkCd<=0){
       let tgt=null, td=2.2;
@@ -368,11 +374,11 @@ function draw(){
     ctx.fillStyle=`rgba(0,0,0,${(1-shade)*0.9 + fog*0.7 + dd*0.5})`;
     ctx.fillRect(x+shX, wy0, step, wh);
   }
-  // sprites (inimigos + companheiro) em 3D
-  function sprite(sx,sy,drawFn,size){
+  // sprites (jogadores + inimigos) em PRIMEIRA PESSOA 3D
+  function sprite(sx,sy,drawFn,size,label,lcolor){
     const dx=sx-player.x, dy=sy-player.y;
     const dist=Math.hypot(dx,dy);
-    if(dist<0.2||dist>14) return;
+    if(dist<0.15||dist>14) return;
     const ang=Math.atan2(dy,dx)-player.a;
     let a=((ang+Math.PI*3)%(Math.PI*2))-Math.PI;
     if(Math.abs(a)>FOV/2+0.3) return;
@@ -385,6 +391,13 @@ function draw(){
     ctx.scale(s,s);
     drawFn(0,0,performance.now()/300);
     ctx.restore();
+    if(label){ // plaquinha com nome em 1ª pessoa
+      ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      const ly=HH/2+shY+sz*0.18-sz*0.85;
+      const w=ctx.measureText(label).width+12;
+      ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(scrX-w/2,ly-13,w,16);
+      ctx.fillStyle=lcolor||'#ffe066'; ctx.fillText(label,scrX,ly);
+    }
   }
   const sprs=[];
   for(let e of enemies) sprs.push({d:Math.hypot(e.x-player.x,e.y-player.y), e});
@@ -394,9 +407,9 @@ function draw(){
     sprite(e.x,e.y,(x,y,tm)=>{
       if(e.type==='zumbi'){ ctx.fillStyle='#3f6b3f'; ctx.fillRect(-7,-14,14,14); ctx.fillStyle='#7ec87e'; ctx.fillRect(-7,-14,14,5); ctx.fillStyle='red'; ctx.fillRect(-4,-10,3,3); ctx.fillRect(1,-10,3,3); }
       else { ctx.fillStyle='#66dd66'; ctx.fillRect(-6,-10,12,10); ctx.fillStyle='#fff'; ctx.fillRect(-4,-7,3,3); ctx.fillRect(1,-7,3,3); ctx.fillStyle='#000'; ctx.fillRect(-3,-6,2,2); ctx.fillRect(2,-6,2,2); }
-    }, 52);
+    }, 52, e.type==='zumbi'?'🧟 ZUMBI':'🟢 SLIME', e.type==='zumbi'?'#ff8888':'#aef2ae');
   }
-  if(buddy) sprite(buddy.x,buddy.y,(x,y,tm)=>{ if(buddy.kind==='stitch') drawStitch(x,y,tm); else drawLilo(x,y,tm); }, 56);
+  if(buddy) sprite(buddy.x,buddy.y,(x,y,tm)=>{ if(buddy.kind==='stitch') drawStitch(x,y,tm); else drawLilo(x,y,tm); }, 64, buddy.kind==='stitch'?'💙 STITCH':'🌺 LILO', '#ffe066');
   // mira
   ctx.fillStyle='#fff'; ctx.fillRect(WW/2-1,HH/2-1,3,3);
   ctx.fillStyle='#0008'; ctx.fillRect(WW/2-1,HH/2-1,3,1);
@@ -652,8 +665,9 @@ document.getElementById('rApple').onclick=()=>{ if(player.flower>=1&&player.hp<p
 
 function startGame(){
   player.hero=hero;
+  player.dirX=Math.cos(player.a); player.dirY=Math.sin(player.a);
   let bkind = hero==='lilo' ? 'stitch' : 'lilo';
-  buddy={x:player.x-1, y:player.y, kind:bkind, face:0, atkCd:0};
+  buddy={x:player.x+0.9, y:player.y+0.9, kind:bkind, face:0, atkCd:0};
   document.getElementById('menu').style.display='none';
   state='play'; updateHUD();
   beep(440,0.1); setTimeout(()=>beep(660,0.1),120);
