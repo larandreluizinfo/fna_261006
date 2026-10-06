@@ -171,18 +171,24 @@ function beep(f,d,type){ try{
   o.stop(AC.currentTime+d);
 }catch(e){} }
 
+function setT(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt; }
 function updateHUD(){
-  document.getElementById('hHp').textContent='❤️'.repeat(Math.max(0,player.hp))+'🤍'.repeat(Math.max(0,player.maxHp-player.hp));
-  document.getElementById('hDay').textContent=(isNight()?'🌙 Noite ':'☀️ Dia ')+day;
-  document.getElementById('hWood').textContent='🪵 '+player.wood;
-  document.getElementById('hStone').textContent='🪨 '+player.stone;
-  document.getElementById('hFlower').textContent='🌸 '+player.flower;
-  document.getElementById('hTorch').textContent='🔥 '+player.torch;
-  document.getElementById('hTool').textContent= (player.hero==='stitch'?'💙 ':'🌺 ')+ (tool==='mao'?'✋ mão': tool==='machado'?'🪓 machado':'🗡️ espada');
-  document.getElementById('hScore').textContent='⭐ '+score;
-  document.getElementById('best').textContent = best>0?('🏆 Recorde: '+best):'';
-  document.getElementById('invCraft').textContent='🪵'+player.wood+' 🪨'+player.stone+' 🌸'+player.flower+' 🔥'+player.torch;
+  if(!player) return;
+  try{
+  setT('hHp','❤️'.repeat(Math.max(0,player.hp))+'🤍'.repeat(Math.max(0,player.maxHp-player.hp)));
+  setT('hDay',(isNight()?'🌙 Noite ':'☀️ Dia ')+day);
+  setT('hWood','🪵 '+player.wood);
+  setT('hStone','🪨 '+player.stone);
+  setT('hFlower','🌸 '+player.flower);
+  setT('hTorch','🔥 '+player.torch);
+  setT('hTool',(player.hero==='stitch'?'💙 ':'🌺 ')+ (tool==='mao'?'✋ mão': tool==='machado'?'🪓 machado':'🗡️ espada'));
+  setT('hScore','⭐ '+score);
+  setT('best',best>0?('🏆 Recorde: '+best):'');
+  setT('invCraft','🪵'+player.wood+' 🪨'+player.stone+' 🌸'+player.flower+' 🔥'+player.torch);
+  }catch(e){}
 }
+// compatibilidade: roundRect nem todo navegador tem
+function rr(g,x,y,w,h,r){ if(g.roundRect){ g.beginPath(); g.roundRect(x,y,w,h,r); g.fill(); } else { g.fillRect(x,y,w,h); } }
 
 function aimInfo(maxD){
   // anda pelo raio da mira até achar bloco quebrável (para dica de coleta)
@@ -267,7 +273,7 @@ function loop(ts){
   if(keys['w']||keys['arrowup'])fw+=1;
   if(keys['s']||keys['arrowdown'])fw-=1;
   if(keys['q'])st-=1;
-  if(keys['e']&&document.getElementById('craft').style.display!=='block')st+=1;
+  if(keys['e'])st+=1;
   if(fw||st){
     let fx=player.dirX, fy=player.dirY;
     let sx2=-fy, sy2=fx;
@@ -398,7 +404,7 @@ function draw(){
   const aim=aimInfo(2.4);
   if(aim){
     let txt='', sub='';
-    if(aim.t===1){ txt='🌳 ÁRVORE'; sub=`aperte ESPAÇO ${3- (3-aim.hp)}/${3} — vira 🪵 madeira`; }
+    if(aim.t===1){ txt='🌳 ÁRVORE'; sub='ESPAÇO para socar ('+aim.hp+'/3) — vira 🪵'; }
     else if(aim.t===2){ txt='🪨 PEDRA'; sub='aperte ESPAÇO até quebrar — vira pedra'; }
     else if(aim.t===5){ txt='🌸 FLOR'; sub='aperte ESPAÇO para colher'; }
     if(txt){
@@ -442,20 +448,20 @@ function drawFists(punch){
     ctx.fillStyle=skin.dark; ctx.fillRect(-16,-34,5,44); ctx.fillRect(11,-34,5,44);
     // punho (nós dos dedos)
     ctx.fillStyle=skin.base;
-    ctx.beginPath(); ctx.roundRect(-20,-58,40,30,9); ctx.fill();
+    rr(ctx,-20,-58,40,30,9);
     ctx.fillStyle=skin.light; ctx.fillRect(-18,-56,36,8);
     // dedos
     ctx.fillStyle=skin.dark;
     for(let i=0;i<4;i++) ctx.fillRect(-16+i*9,-52,2,20);
     ctx.fillStyle=skin.base; ctx.fillRect(-19,-34,38,10);
     // polegar
-    ctx.fillStyle=skin.base; ctx.beginPath(); ctx.roundRect(8,-38,14,16,5); ctx.fill();
+    ctx.fillStyle=skin.base; rr(ctx,8,-38,14,16,5);
     ctx.fillStyle=skin.dark; ctx.fillRect(10,-36,2,12);
     // ferramenta na mão em 1ª pessoa
     if(tool==='espada'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(-3,-96,7,40); ctx.fillStyle='#cfcfcf'; ctx.fillRect(-5,-140,11,46); ctx.fillStyle='#fff'; ctx.fillRect(-5,-140,4,46); }
     if(tool==='machado'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(-3,-100,7,48); ctx.fillStyle='#9a9a9a'; ctx.fillRect(-16,-116,34,16); ctx.fillStyle='#ccc'; ctx.fillRect(-16,-116,34,5); }
     if(pw){ // brilho do soco
-      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.roundRect(-20,-58,40,30,9); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.35)'; rr(ctx,-20,-58,40,30,9);
     }
     ctx.restore();
   }
@@ -622,19 +628,18 @@ addEventListener('pointermove',e=>{
   if(Math.abs(dx)>2 && e.buttons){ player.a+=dx*0.005; dragX=e.clientX; }
 });
 addEventListener('pointerup',()=>dragX=null);
-function bindHold(id,key){
-  const el=document.querySelector(`[data-k="${key}"]`); if(!el)return;
-  const on=e=>{e.preventDefault(); keys[key==='act'?' ':key]=true; if(key==='act')attack();};
-  const off=e=>{e.preventDefault(); keys[key==='act'?' ':key]=false;};
-  el.addEventListener('pointerdown',on); el.addEventListener('pointerup',off); el.addEventListener('pointerleave',off);
-}
-['up','down','left','right','act'].forEach(k=>bindHold(null,k));
-// mapear dpad para keys
+// dpad touch (mapeamento único, sem grudar tecla)
 document.querySelectorAll('.tbtn[data-k]').forEach(b=>{
-  let k=b.dataset.k;
-  let map={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright',act:' '};
-  b.addEventListener('pointerdown',e=>{e.preventDefault(); keys[map[k]]=true; if(k==='act')attack();});
-  b.addEventListener('pointerup',()=>keys[map[k]]=false);
+  const k=b.dataset.k;
+  const map={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright',act:' '};
+  const kk=map[k];
+  const down=e=>{e.preventDefault(); keys[kk]=true; if(k==='act')attack();};
+  const up=e=>{e.preventDefault(); keys[kk]=false;};
+  b.addEventListener('pointerdown',down);
+  b.addEventListener('pointerup',up);
+  b.addEventListener('pointercancel',up);
+  b.addEventListener('pointerleave',up);
+  b.addEventListener('contextmenu',e=>e.preventDefault());
 });
 document.getElementById('bAct').onclick=()=>attack();
 document.getElementById('bTorch').onclick=()=>placeTorch();
