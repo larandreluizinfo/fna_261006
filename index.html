@@ -87,8 +87,10 @@
   </div>
 </div>
 <div id="help">
-<b>Como jogar (1ª pessoa):</b> Escolha <b>Lilo 🌺</b> ou <b>Stitch 💙</b> e veja seus <b>punhos</b> na tela!
-Ande com <kbd>W</kbd><kbd>S</kbd>, gire com <kbd>A</kbd><kbd>D</kbd> ou arraste o mouse. Mire e aperte <kbd>ESPAÇO</kbd> para socar árvores/pedras e monstros.
+<b>Como coletar MADEIRA 🪵:</b> 1) Ande com <kbd>W</kbd> até ver uma <b>árvore 🌳</b> na frente.
+2) Gire com <kbd>A</kbd>/<kbd>D</kbd> até a mira mostrar <b>“🌳 ÁRVORE”</b>.
+3) Aperte <kbd>ESPAÇO</kbd> 3 vezes (com machado é mais rápido) — cada árvore dá <b>1 🪵</b>.
+Com 2 🪵 faça tocha, com 3🪵+2🪨 faça machado (tecla <kbd>C</kbd>).
 À noite nascem <b>slimes</b> e <b>zumbis</b> — bata neles! Com <kbd>E</kbd> abra o menu de criação.
 Coloque tochas com <kbd>T</kbd> para iluminar a noite. Se a vida acabar, você recomeça. Recorde fica salvo!
 </div>
@@ -182,17 +184,31 @@ function updateHUD(){
   document.getElementById('invCraft').textContent='🪵'+player.wood+' 🪨'+player.stone+' 🌸'+player.flower+' 🔥'+player.torch;
 }
 
+function aimInfo(maxD){
+  // anda pelo raio da mira até achar bloco quebrável (para dica de coleta)
+  const steps=16, md=maxD||2.2;
+  for(let s=1;s<=steps;s++){
+    const d=md*s/steps;
+    const x=Math.floor(player.x+player.dirX*d), y=Math.floor(player.y+player.dirY*d);
+    const t=tileAt(x,y);
+    if(t===1||t===2||t===5) return {gx:x, gy:y, t, hp:mapHp[y*W+x], d};
+    if(t===4) return {gx:x, gy:y, t, hp:0, d};
+    if(solid(t)) return {gx:x, gy:y, t, hp:mapHp[y*W+x]||0, d};
+  }
+  return null;
+}
 function attack(){
   if(state!=='play'||atkCd>0) return;
   atkCd=0.28;
   let dmg = tool==='espada'?3: tool==='machado'?2:1;
-  // inimigo na frente?
+  // inimigo na frente? (alcance maior para facilitar)
   let px=player.x, py=player.y;
-  let tx=px+player.dirX*0.9, ty=py+player.dirY*0.9;
-  let hitE=null, hd=1.2;
+  let tx=px+player.dirX*1.1, ty=py+player.dirY*1.1;
+  let hitE=null, hd=1.4;
   for(let e of enemies){ let d=Math.hypot(e.x-tx,e.y-ty); if(d<hd){hitE=e; hd=d;} }
   if(hitE){ hitE.hp-=dmg; burst(hitE.x,hitE.y,'#fff',5); beep(200,0.08); if(hitE.hp<=0){ killE(hitE);} updateHUD(); return; }
-  // tile na frente
+  // tile na frente (alcance 1.3 = mais fácil coletar madeira)
+  tx=px+player.dirX*1.2; ty=py+player.dirY*1.2;
   let gx=Math.floor(tx), gy=Math.floor(ty);
   if(gx<0||gy<0||gx>=W||gy>=H) return;
   let i=gy*W+gx, t=map[i];
@@ -378,6 +394,33 @@ function draw(){
   // mira
   ctx.fillStyle='#fff'; ctx.fillRect(WW/2-1,HH/2-1,3,3);
   ctx.fillStyle='#0008'; ctx.fillRect(WW/2-1,HH/2-1,3,1);
+  // dica de coleta de madeira/pedra na mira
+  const aim=aimInfo(2.4);
+  if(aim){
+    let txt='', sub='';
+    if(aim.t===1){ txt='🌳 ÁRVORE'; sub=`aperte ESPAÇO ${3- (3-aim.hp)}/${3} — vira 🪵 madeira`; }
+    else if(aim.t===2){ txt='🪨 PEDRA'; sub='aperte ESPAÇO até quebrar — vira pedra'; }
+    else if(aim.t===5){ txt='🌸 FLOR'; sub='aperte ESPAÇO para colher'; }
+    if(txt){
+      ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      const bx=WW/2, by=HH/2+42+shY;
+      const wdt=Math.max(ctx.measureText(txt).width, ctx.measureText(sub).width)+20;
+      ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(bx-wdt/2,by-16,wdt,40);
+      ctx.fillStyle='#ffe066'; ctx.fillText(txt,bx,by-1);
+      ctx.font='11px monospace'; ctx.fillStyle='#fff'; ctx.fillText(sub,bx,by+14);
+      // barrinha de vida do bloco
+      if(aim.t===1||aim.t===2){
+        const max=aim.t===1?3:4;
+        ctx.fillStyle='#000'; ctx.fillRect(bx-30,by+18,60,6);
+        ctx.fillStyle='#6abe30'; ctx.fillRect(bx-29,by+19,58*(aim.hp/max),4);
+      }
+    }
+  } else if(player.wood===0&&player.stone===0){
+    ctx.font='bold 12px monospace'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(WW/2-150,HH/2+30,300,34);
+    ctx.fillStyle='#ffe066'; ctx.fillText('🌳 Ande até uma ÁRVORE e soque!',WW/2,HH/2+44);
+    ctx.fillStyle='#fff'; ctx.font='11px monospace'; ctx.fillText('W frente • A/D girar • ESPAÇO socar',WW/2,HH/2+58);
+  }
   // noite: vinheta
   if(dd>0){ ctx.fillStyle=`rgba(0,0,40,${dd*0.7})`; ctx.fillRect(0,0,WW,HH); }
   // ===== PUNHOS REALISTAS em primeira pessoa =====
