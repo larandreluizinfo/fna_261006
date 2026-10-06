@@ -40,7 +40,7 @@
 <div id="wrap">
   <canvas id="game" width="640" height="360"></canvas>
   <div id="craft">
-    <h2>🔨 Criar (tecla C fecha)</h2>
+    <h2>🎒 Inventário (tecla E fecha)</h2>
     <button id="rTorch">🔥 Tocha (2 madeira)</button>
     <button id="rAxe">🪓 Machado (3 mad + 2 pedra)</button>
     <button id="rSword">🗡️ Espada (2 mad + 3 pedra)</button>
@@ -57,7 +57,7 @@
       <button id="pickLilo" class="sel">🌺 LILO</button>
       <button id="pickStitch">💙 STITCH</button>
     </div>
-    <p>🎮 <b>W / ↑</b> frente • <b>S / ↓</b> trás • <b>A / ←</b> e <b>D / →</b> girar • <b>Q / E</b> lado • <b>ESPAÇO / clique</b> socar • <b>C</b> criar • <b>T</b> tocha • <b>1/2/3</b> ferramenta • arraste o mouse para olhar</p>
+    <p>🎮 <b>W / ↑</b> frente • <b>S / ↓</b> trás • <b>A / ←</b> e <b>D / →</b> girar • <b>Q / R</b> lado • <b>ESPAÇO / clique</b> socar • <b>E</b> 🎒 inventário • <b>T</b> tocha • <b>1/2/3</b> ferramenta • arraste o mouse para olhar</p>
     <p>📱 No celular use os botões na tela.</p>
     <p>👦👧 Por Felipe 5ºB, Nicole 5ºB e Alice 5ºA</p>
     <button id="start">▶ JOGAR</button>
@@ -73,6 +73,8 @@
   <span class="pill" id="hTorch">🔥 0</span>
   <span class="pill" id="hTool">✋ mão</span>
   <span class="pill" id="hScore">⭐ 0</span>
+  <button class="pill" id="hInv" style="cursor:pointer" title="Abrir inventário (E)">🎒 Inventário [E]</button>
+  <button class="pill" id="hTorchB" style="cursor:pointer" title="Colocar tocha (T)">🔥 Tocha [T]</button>
 </div>
 <div id="touch">
   <div class="dpad">
@@ -273,7 +275,7 @@ function loop(ts){
   if(keys['w']||keys['arrowup'])fw+=1;
   if(keys['s']||keys['arrowdown'])fw-=1;
   if(keys['q'])st-=1;
-  if(keys['e'])st+=1;
+  if(keys['r'])st+=1;
   if(fw||st){
     let fx=player.dirX, fy=player.dirY;
     let sx2=-fy, sy2=fx;
@@ -619,7 +621,7 @@ addEventListener('keydown',e=>{
   let k=e.key.toLowerCase();
   keys[k=== ' '?' ':k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k)) e.preventDefault();
-  if(k==='c'||k==='f') toggleCraft();
+  if(k==='e'||k==='c'||k==='f') toggleCraft();
   if(k==='t') placeTorch();
   if(k==='1') tool='mao';
   if(k==='2'&&hasAxe) tool='machado';
@@ -657,6 +659,8 @@ document.querySelectorAll('.tbtn[data-k]').forEach(b=>{
 document.getElementById('bAct').onclick=()=>attack();
 document.getElementById('bTorch').onclick=()=>placeTorch();
 document.getElementById('bCraft').onclick=()=>toggleCraft();
+document.getElementById('hInv').onclick=()=>toggleCraft();
+document.getElementById('hTorchB').onclick=()=>placeTorch();
 // receitas
 document.getElementById('rTorch').onclick=()=>{ if(player.wood>=2){player.wood-=2;player.torch++;beep(700,0.1);} else alert('Precisa de 2 madeiras!'); updateHUD(); };
 document.getElementById('rAxe').onclick=()=>{ if(hasAxe){tool='machado';updateHUD();return;} if(player.wood>=3&&player.stone>=2){player.wood-=3;player.stone-=2;hasAxe=true;tool='machado';beep(900,0.15);} else alert('Precisa de 3 madeiras + 2 pedras!'); updateHUD(); };
