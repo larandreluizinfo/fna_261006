@@ -1,12 +1,397 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fna_261006</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>MiniCraft 5º ano — Felipe, Nicole e Alice</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
+  body { background:#1a2b1a; font-family: "Courier New", monospace; color:#fff; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:8px; }
+  h1 { font-size:20px; margin:6px 0; text-shadow:2px 2px 0 #000; text-align:center; }
+  .sub { font-size:12px; opacity:.9; margin-bottom:6px; text-align:center; }
+  #wrap { position:relative; width:min(96vw, 960px); }
+  canvas { width:100%; height:auto; image-rendering:pixelated; border:4px solid #000; background:#5da54a; display:block; touch-action:none; }
+  #hud { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:6px 0; font-size:13px; }
+  .pill { background:#000a; border:2px solid #000; padding:4px 8px; border-radius:8px; }
+  #craft { display:none; position:absolute; top:8px; right:8px; background:#222e; border:3px solid #000; padding:10px; width:230px; z-index:5; }
+  #craft h2 { font-size:14px; margin-bottom:6px; }
+  #craft button { display:block; width:100%; margin:4px 0; padding:6px; font-family:inherit; font-size:12px; cursor:pointer; }
+  #menu { position:absolute; inset:0; background:#000c; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; z-index:10; padding:16px; }
+  #menu h2 { font-size:28px; margin-bottom:8px; color:#ffe066; text-shadow:2px 2px 0 #000; }
+  #menu p { font-size:13px; max-width:520px; margin:4px 0; line-height:1.4; }
+  #menu button { margin-top:10px; font-size:18px; padding:10px 22px; cursor:pointer; font-family:inherit; background:#6abe30; border:3px solid #000; }
+  #touch { display:none; justify-content:space-between; width:min(96vw,960px); margin-top:6px; user-select:none; }
+  @media (pointer:coarse) { #touch { display:flex; } }
+  .dpad { display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(3,52px); gap:2px; }
+  .tbtn { background:#ffffff22; border:2px solid #fff; color:#fff; font-size:20px; border-radius:10px; }
+  .tbtn:active { background:#ffffff55; }
+  .acts { display:flex; gap:8px; align-items:center; }
+  .acts button { width:64px; height:64px; font-size:22px; border-radius:50%; border:3px solid #000; }
+  #help { font-size:12px; background:#0009; padding:8px; border:2px solid #000; max-width:960px; width:min(96vw,960px); margin-top:6px; line-height:1.5; }
+  kbd { background:#fff; color:#000; padding:0 5px; border-radius:4px; }
+</style>
 </head>
 <body>
-  <h1>fna_261006</h1>
-  <p>Jogo criado por Felipe 5ºB, Nicole 5ºB e Alice 5ºA.</p>
+<h1>⛏️ MINICRAFT 5º ANO ⛏️</h1>
+<div class="sub">Criado por <b>Felipe 5ºB</b>, <b>Nicole 5ºB</b> e <b>Alice 5ºA</b> — <a style="color:#ffe066" href="https://larandreluizinfo.github.io/fna_261006/">jogar no Pages</a></div>
+<div id="wrap">
+  <canvas id="game" width="480" height="320"></canvas>
+  <div id="craft">
+    <h2>🔨 Criar (tecla E fecha)</h2>
+    <button id="rTorch">🔥 Tocha (2 madeira)</button>
+    <button id="rAxe">🪓 Machado (3 mad + 2 pedra)</button>
+    <button id="rSword">🗡️ Espada (2 mad + 3 pedra)</button>
+    <button id="rApple">🍎 Comer flor = +2 vida (1 flor)</button>
+    <div style="font-size:11px;margin-top:6px" id="invCraft"></div>
+  </div>
+  <div id="menu">
+    <h2>MINICRAFT</h2>
+    <p>🌳 Quebre <b>árvores</b> e <b>pedras</b> para coletar recursos.<br>
+    🌙 Sobreviva aos <b>monstros da noite</b>!<br>
+    🔨 Crie ferramentas, coloque tochas e faça pontos.</p>
+    <p>🎮 <b>WASD / setas</b> andar • <b>ESPAÇO</b> quebrar/atacar • <b>E</b> criar • <b>T</b> tocha • <b>1/2/3</b> ferramenta</p>
+    <p>📱 No celular use os botões na tela.</p>
+    <p>👦👧 Por Felipe 5ºB, Nicole 5ºB e Alice 5ºA</p>
+    <button id="start">▶ JOGAR</button>
+    <p id="best" style="color:#ffe066"></p>
+  </div>
+</div>
+<div id="hud">
+  <span class="pill" id="hHp">❤️❤️❤️❤️❤️</span>
+  <span class="pill" id="hDay">☀️ Dia 1</span>
+  <span class="pill" id="hWood">🪵 0</span>
+  <span class="pill" id="hStone">🪨 0</span>
+  <span class="pill" id="hFlower">🌸 0</span>
+  <span class="pill" id="hTorch">🔥 0</span>
+  <span class="pill" id="hTool">✋ mão</span>
+  <span class="pill" id="hScore">⭐ 0</span>
+</div>
+<div id="touch">
+  <div class="dpad">
+    <span></span><button class="tbtn" data-k="up">▲</button><span></span>
+    <button class="tbtn" data-k="left">◀</button><button class="tbtn" data-k="down">▼</button><button class="tbtn" data-k="right">▶</button>
+    <span></span><button class="tbtn" data-k="act">⛏</button><span></span>
+  </div>
+  <div class="acts">
+    <button id="bCraft" style="background:#f0a030">🔨</button>
+    <button id="bTorch" style="background:#ff5533">🔥</button>
+    <button id="bAct" style="background:#6abe30">⚒</button>
+  </div>
+</div>
+<div id="help">
+<b>Como jogar:</b> Ande com <kbd>WASD</kbd>, encoste numa árvore/pedra e aperte <kbd>ESPAÇO</kbd> até quebrar.
+À noite nascem <b>slimes</b> e <b>zumbis</b> — bata neles! Com <kbd>E</kbd> abra o menu de criação.
+Coloque tochas com <kbd>T</kbd> para iluminar a noite. Se a vida acabar, você recomeça. Recorde fica salvo!
+</div>
+<script>
+"use strict";
+// ===== MiniCraft 5º ano =====
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const TS = 16; // tile px
+const VW = cv.width / TS, VH = cv.height / TS; // 30x20 tiles visiveis
+const W = 64, H = 64;
+// tiles: 0 grama 1 arvore 2 pedra 3 areia 4 agua 5 flor 6 tocha
+let map, mapHp;
+let player, enemies, parts, torches;
+let day, timeOfDay, score, state, shake;
+let keys = {};
+let tool = 'mao'; // mao | machado | espada
+let hasAxe=false, hasSword=false;
+let atkCd=0, hurtCd=0, spawnT=0;
+let best = +(localStorage.getItem('minicraft_best')||0);
+
+function genWorld(){
+  map = new Uint8Array(W*H);
+  mapHp = new Int8Array(W*H);
+  for(let i=0;i<W*H;i++){ map[i]=0; }
+  // lagos
+  for(let l=0;l<7;l++){
+    let cx=4+Math.random()*(W-8), cy=4+Math.random()*(H-8), r=2+Math.random()*3;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      let d=Math.hypot(x-cx,y-cy);
+      if(d<r){ map[y*W+x]=4; }
+      else if(d<r+1.2 && map[y*W+x]===0){ map[y*W+x]=3; }
+    }
+  }
+  // espalhar
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    let i=y*W+x;
+    if(map[i]!==0) continue;
+    let r=Math.random();
+    if(r<0.09){ map[i]=1; mapHp[i]=3; }
+    else if(r<0.135){ map[i]=2; mapHp[i]=4; }
+    else if(r<0.165){ map[i]=5; mapHp[i]=1; }
+  }
+  // area inicial limpa
+  let sx=W>>1, sy=H>>1;
+  for(let y=sy-2;y<=sy+2;y++)for(let x=sx-2;x<=sx+2;x++) map[y*W+x]=0;
+}
+function reset(){
+  genWorld();
+  player={x:W/2+0.5, y:H/2+0.5, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0};
+  enemies=[]; parts=[]; torches=[];
+  day=1; timeOfDay=0.25; score=0; shake=0; tool='mao'; hasAxe=false; hasSword=false;
+  updateHUD();
+}
+function tileAt(x,y){ x|=0; y|=0; if(x<0||y<0||x>=W||y>=H) return 4; return map[y*W+x]; }
+function solid(t){ return t===4||t===1||t===2; }
+
+function isNight(){ return timeOfDay<0.2||timeOfDay>0.75; }
+function darkness(){
+  if(timeOfDay>=0.25&&timeOfDay<=0.7) return 0;
+  if(timeOfDay>0.7&&timeOfDay<=0.8) return (timeOfDay-0.7)/0.1*0.55;
+  if(timeOfDay>0.8||timeOfDay<0.15) return 0.55;
+  return (0.2-timeOfDay)/0.05*0.55;
+}
+
+let AC=null;
+function beep(f,d,type){ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  let o=AC.createOscillator(), g=AC.createGain();
+  o.type=type||'square'; o.frequency.value=f; g.gain.value=0.06;
+  o.connect(g); g.connect(AC.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+d);
+  o.stop(AC.currentTime+d);
+}catch(e){} }
+
+function updateHUD(){
+  document.getElementById('hHp').textContent='❤️'.repeat(Math.max(0,player.hp))+'🤍'.repeat(Math.max(0,player.maxHp-player.hp));
+  document.getElementById('hDay').textContent=(isNight()?'🌙 Noite ':'☀️ Dia ')+day;
+  document.getElementById('hWood').textContent='🪵 '+player.wood;
+  document.getElementById('hStone').textContent='🪨 '+player.stone;
+  document.getElementById('hFlower').textContent='🌸 '+player.flower;
+  document.getElementById('hTorch').textContent='🔥 '+player.torch;
+  document.getElementById('hTool').textContent= tool==='mao'?'✋ mão': tool==='machado'?'🪓 machado':'🗡️ espada';
+  document.getElementById('hScore').textContent='⭐ '+score;
+  document.getElementById('best').textContent = best>0?('🏆 Recorde: '+best):'';
+  document.getElementById('invCraft').textContent='🪵'+player.wood+' 🪨'+player.stone+' 🌸'+player.flower+' 🔥'+player.torch;
+}
+
+function attack(){
+  if(state!=='play'||atkCd>0) return;
+  atkCd=0.28;
+  let dmg = tool==='espada'?3: tool==='machado'?2:1;
+  // inimigo na frente?
+  let px=player.x, py=player.y;
+  let tx=px+player.dirX*0.9, ty=py+player.dirY*0.9;
+  let hitE=null, hd=1.2;
+  for(let e of enemies){ let d=Math.hypot(e.x-tx,e.y-ty); if(d<hd){hitE=e; hd=d;} }
+  if(hitE){ hitE.hp-=dmg; burst(hitE.x,hitE.y,'#fff',5); beep(200,0.08); if(hitE.hp<=0){ killE(hitE);} updateHUD(); return; }
+  // tile na frente
+  let gx=Math.floor(tx), gy=Math.floor(ty);
+  if(gx<0||gy<0||gx>=W||gy>=H) return;
+  let i=gy*W+gx, t=map[i];
+  if(t===1){ let mult = tool==='machado'?2:1; mapHp[i]-=mult; burst(gx+0.5,gy+0.5,'#3a7d2c',4); beep(150,0.07);
+    if(mapHp[i]<=0){ map[i]=0; player.wood++; score+=2; burst(gx+0.5,gy+0.5,'#8b5a2b',8); beep(400,0.1);} }
+  else if(t===2){ mapHp[i]-=1; burst(gx+0.5,gy+0.5,'#888',4); beep(120,0.07);
+    if(mapHp[i]<=0){ map[i]=0; player.stone++; score+=3; burst(gx+0.5,gy+0.5,'#ccc',8); beep(500,0.1);} }
+  else if(t===5){ map[i]=0; player.flower++; score+=1; beep(600,0.08); }
+  else { // soco no ar
+    burst(px+player.dirX, py+player.dirY, '#ffffff88', 2);
+  }
+  updateHUD();
+}
+function burst(x,y,c,n){ for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,l:0.4,c}); }
+function killE(e){
+  e.dead=true; score+= e.type==='zumbi'?10:5;
+  burst(e.x,e.y, e.type==='zumbi'?'#4a7d4a':'#66ff66',10);
+  beep(800,0.12);
+  if(Math.random()<0.3){ player.hp=Math.min(player.maxHp,player.hp+1); }
+  if(score>best){ best=score; localStorage.setItem('minicraft_best',best); }
+  updateHUD();
+}
+function spawnEnemy(){
+  let night=isNight();
+  let max = night?8:3;
+  if(enemies.length>=max) return;
+  let a=Math.random()*Math.PI*2, r=10+Math.random()*4;
+  let x=player.x+Math.cos(a)*r, y=player.y+Math.sin(a)*r;
+  x=Math.max(1,Math.min(W-2,x)); y=Math.max(1,Math.min(H-2,y));
+  if(solid(tileAt(x,y))) return;
+  let type = night ? (Math.random()<0.5?'zumbi':'slime') : 'slime';
+  enemies.push({x,y,hp:type==='zumbi'?4:2,type,t:Math.random()*10});
+}
+function placeTorch(){
+  if(player.torch<=0||state!=='play') return;
+  let gx=Math.floor(player.x), gy=Math.floor(player.y);
+  let i=gy*W+gx;
+  if(map[i]===0){ map[i]=6; player.torch--; beep(700,0.1); updateHUD(); }
+}
+
+let last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  let dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  if(state!=='play') return;
+  // tempo
+  timeOfDay+=dt/120; // 1 dia = 2 min
+  if(timeOfDay>=1){ timeOfDay=0; day++; beep(880,0.2); }
+  atkCd-=dt; hurtCd-=dt;
+  // movimento
+  let mx=0,my=0;
+  if(keys['arrowup']||keys['w'])my-=1;
+  if(keys['arrowdown']||keys['s'])my+=1;
+  if(keys['arrowleft']||keys['a'])mx-=1;
+  if(keys['arrowright']||keys['d'])mx+=1;
+  if(mx||my){ let l=Math.hypot(mx,my); mx/=l; my/=l;
+    player.dirX=mx; player.dirY=my;
+    let sp=4.2*dt, nx=player.x+mx*sp, ny=player.y+my*sp;
+    if(!solid(tileAt(nx,player.y))) player.x=nx;
+    if(!solid(tileAt(player.x,ny))) player.y=ny;
+    player.face+=dt*10;
+  }
+  if(keys[' ']) attack();
+  // inimigos
+  spawnT-=dt; if(spawnT<=0){ spawnT= isNight()?1.2:3; spawnEnemy(); }
+  for(let e of enemies){
+    e.t+=dt;
+    let dx=player.x-e.x, dy=player.y-e.y, d=Math.hypot(dx,dy)||1;
+    let sp=(e.type==='zumbi'?1.6:1.1)*dt;
+    let nx=e.x+dx/d*sp, ny=e.y+dy/d*sp;
+    if(!solid(tileAt(nx,e.y))) e.x=nx;
+    if(!solid(tileAt(e.x,ny))) e.y=ny;
+    if(d<0.6 && hurtCd<=0){ player.hp--; hurtCd=0.8; shake=0.3; beep(110,0.2,'sawtooth'); updateHUD();
+      if(player.hp<=0){ gameOver(); } }
+  }
+  enemies=enemies.filter(e=>!e.dead);
+  // particulas
+  for(let p of parts){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.l-=dt; }
+  parts=parts.filter(p=>p.l>0);
+  if(shake>0)shake-=dt;
+  draw();
+  if(Math.random()<0.05) updateHUD();
+}
+
+function draw(){
+  let camX=player.x-VW/2, camY=player.y-VH/2;
+  let sx=0, sy=0;
+  if(shake>0){ sx=(Math.random()-0.5)*0.4; sy=(Math.random()-0.5)*0.4; }
+  ctx.save();
+  ctx.fillStyle='#5da54a'; ctx.fillRect(0,0,cv.width,cv.height);
+  for(let vy=0;vy<VH+1;vy++)for(let vx=0;vx<VW+1;vx++){
+    let wx=Math.floor(camX+vx), wy=Math.floor(camY+vy);
+    if(wx<0||wy<0||wx>=W||wy>=H) continue;
+    let t=map[wy*W+wx];
+    let dx=Math.round((vx-(camX%1))*TS+sx*TS), dy=Math.round((vy-(camY%1))*TS+sy*TS);
+    drawTile(t,dx,dy,wx,wy);
+  }
+  // inimigos
+  for(let e of enemies){
+    let dx=(e.x-camX)*TS+sx*TS, dy=(e.y-camY)*TS+sy*TS;
+    let bob=Math.sin(e.t*6)*2;
+    ctx.fillStyle='#0008'; ctx.fillRect(dx-6,dy+2,12,4);
+    if(e.type==='zumbi'){ ctx.fillStyle='#3f6b3f'; ctx.fillRect(dx-7,dy-8+bob,14,12); ctx.fillStyle='#7ec87e'; ctx.fillRect(dx-7,dy-8+bob,14,4); ctx.fillStyle='#ff0000'; ctx.fillRect(dx-4,dy-5+bob,3,3); ctx.fillRect(dx+1,dy-5+bob,3,3); }
+    else { ctx.fillStyle='#66dd66'; ctx.fillRect(dx-6,dy-6+bob,12,10); ctx.fillStyle='#fff'; ctx.fillRect(dx-4,dy-3+bob,3,3); ctx.fillRect(dx+1,dy-3+bob,3,3); ctx.fillStyle='#000'; ctx.fillRect(dx-3,dy-2+bob,2,2); ctx.fillRect(dx+2,dy-2+bob,2,2); }
+  }
+  // jogador
+  let px=(player.x-camX)*TS+sx*TS, py=(player.y-camY)*TS+sy*TS;
+  let walk=Math.sin(player.face)*2;
+  ctx.fillStyle='#0008'; ctx.fillRect(px-7,py+4,14,4);
+  ctx.fillStyle='#ffcc99'; ctx.fillRect(px-6,py-6+walk*0.3,12,10); // corpo
+  ctx.fillStyle='#5b3a1e'; ctx.fillRect(px-6,py-10+walk*0.3,12,5); // cabelo
+  ctx.fillStyle='#000'; ctx.fillRect(px-3,py-2,2,2); ctx.fillRect(px+1,py-2,2,2);
+  // ferramenta na mão
+  let hx=px+player.dirX*10, hy=py+player.dirY*10;
+  if(tool==='espada'){ ctx.fillStyle='#ccc'; ctx.fillRect(hx-1,hy-6,3,10); ctx.fillStyle='#8b5a2b'; ctx.fillRect(hx-1,hy+4,3,3); }
+  else if(tool==='machado'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(hx-1,hy-4,3,9); ctx.fillStyle='#999'; ctx.fillRect(hx-4,hy-7,9,5); }
+  // particulas
+  for(let p of parts){ ctx.fillStyle=p.c; ctx.fillRect((p.x-camX)*TS, (p.y-camY)*TS, 3,3); }
+  ctx.restore();
+  // noite
+  let d=darkness();
+  if(d>0){
+    ctx.fillStyle=`rgba(0,0,40,${d})`; ctx.fillRect(0,0,cv.width,cv.height);
+    // luz das tochas + jogador leve
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    function light(wx,wy,r,a){
+      let dx=(wx-camX)*TS, dy=(wy-camY)*TS;
+      let g=ctx.createRadialGradient(dx,dy,4,dx,dy,r*TS);
+      g.addColorStop(0,`rgba(255,200,80,${a})`); g.addColorStop(1,'rgba(255,200,80,0)');
+      ctx.fillStyle=g; ctx.fillRect(dx-r*TS,dy-r*TS,r*TS*2,r*TS*2);
+    }
+    light(player.x,player.y,2,0.25);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(map[y*W+x]===6){
+      let dx=(x+0.5-camX)*TS, dy=(y+0.5-camY)*TS;
+      if(dx>-50&&dy>-50&&dx<cv.width+50&&dy<cv.height+50) light(x+0.5,y+0.5,3.5,0.8);
+    }
+    ctx.restore();
+  }
+}
+function drawTile(t,dx,dy,wx,wy){
+  if(t===0){ ctx.fillStyle=((wx+wy)%2===0)?'#5da54a':'#57a047'; ctx.fillRect(dx,dy,TS,TS); }
+  else if(t===3){ ctx.fillStyle='#e0d29a'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#d0c08a'; ctx.fillRect(dx+3,dy+3,4,4); }
+  else if(t===4){ ctx.fillStyle='#3d7dd8'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#5d9df8'; ctx.fillRect(dx+2,dy+2+((wy+Date.now()/500)%2),8,2); }
+  else if(t===5){ ctx.fillStyle='#5da54a'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#ff88cc'; ctx.fillRect(dx+6,dy+4,4,4); ctx.fillStyle='#ffff88'; ctx.fillRect(dx+7,dy+5,2,2); ctx.fillStyle='#2d7d2d'; ctx.fillRect(dx+7,dy+8,2,5); }
+  else if(t===1){ ctx.fillStyle='#5da54a'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#5b3a1e'; ctx.fillRect(dx+6,dy+8,4,8); ctx.fillStyle='#2d7d2d'; ctx.fillRect(dx+1,dy,14,10); ctx.fillStyle='#3fa53f'; ctx.fillRect(dx+3,dy+2,6,5); }
+  else if(t===2){ ctx.fillStyle='#5da54a'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#888'; ctx.fillRect(dx+2,dy+3,12,10); ctx.fillStyle='#bbb'; ctx.fillRect(dx+4,dy+5,5,4); }
+  else if(t===6){ ctx.fillStyle='#5da54a'; ctx.fillRect(dx,dy,TS,TS); ctx.fillStyle='#8b5a2b'; ctx.fillRect(dx+7,dy+7,2,7); ctx.fillStyle='#ffaa00'; ctx.fillRect(dx+5,dy+3,6,5); ctx.fillStyle='#ffff88'; ctx.fillRect(dx+6,dy+4,3,3); }
+}
+function gameOver(){
+  state='dead';
+  if(score>best){ best=score; localStorage.setItem('minicraft_best',best); }
+  const m=document.getElementById('menu');
+  m.style.display='flex';
+  m.innerHTML=`<h2>💀 FIM!</h2><p>Você fez <b>${score} pontos</b> e chegou ao <b>dia ${day}</b>.</p><p>🏆 Recorde: ${best}</p><p>👦👧 Felipe 5ºB • Nicole 5ºB • Alice 5ºA</p><button onclick="location.reload()">↻ JOGAR DE NOVO</button>`;
+  beep(80,0.5,'sawtooth');
+}
+
+// input
+addEventListener('keydown',e=>{
+  let k=e.key.toLowerCase();
+  keys[k=== ' '?' ':k]=true;
+  if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k)) e.preventDefault();
+  if(k==='e') toggleCraft();
+  if(k==='t') placeTorch();
+  if(k==='1') tool='mao';
+  if(k==='2'&&hasAxe) tool='machado';
+  if(k==='3'&&hasSword) tool='espada';
+  if(k==='enter'&&state==='menu') startGame();
+  updateHUD();
+});
+addEventListener('keyup',e=>{ keys[e.key.toLowerCase()===' '?' ':e.key.toLowerCase()]=false; });
+function toggleCraft(){ const c=document.getElementById('craft'); c.style.display=c.style.display==='block'?'none':'block'; }
+cv.addEventListener('pointerdown',e=>{
+  if(state!=='play')return;
+  const r=cv.getBoundingClientRect();
+  let cx=(e.clientX-r.left)/r.width*cv.width, cy=(e.clientY-r.top)/r.height*cv.height;
+  // mira: ajusta direção
+  let dx=cx-cv.width/2, dy=cy-cv.height/2;
+  if(Math.abs(dx)>Math.abs(dy)){ player.dirX=Math.sign(dx); player.dirY=0; } else { player.dirY=Math.sign(dy); player.dirX=0; }
+  attack();
+});
+function bindHold(id,key){
+  const el=document.querySelector(`[data-k="${key}"]`); if(!el)return;
+  const on=e=>{e.preventDefault(); keys[key==='act'?' ':key]=true; if(key==='act')attack();};
+  const off=e=>{e.preventDefault(); keys[key==='act'?' ':key]=false;};
+  el.addEventListener('pointerdown',on); el.addEventListener('pointerup',off); el.addEventListener('pointerleave',off);
+}
+['up','down','left','right','act'].forEach(k=>bindHold(null,k));
+// mapear dpad para keys
+document.querySelectorAll('.tbtn[data-k]').forEach(b=>{
+  let k=b.dataset.k;
+  let map={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright',act:' '};
+  b.addEventListener('pointerdown',e=>{e.preventDefault(); keys[map[k]]=true; if(k==='act')attack();});
+  b.addEventListener('pointerup',()=>keys[map[k]]=false);
+});
+document.getElementById('bAct').onclick=()=>attack();
+document.getElementById('bTorch').onclick=()=>placeTorch();
+document.getElementById('bCraft').onclick=()=>toggleCraft();
+// receitas
+document.getElementById('rTorch').onclick=()=>{ if(player.wood>=2){player.wood-=2;player.torch++;beep(700,0.1);} else alert('Precisa de 2 madeiras!'); updateHUD(); };
+document.getElementById('rAxe').onclick=()=>{ if(hasAxe){tool='machado';updateHUD();return;} if(player.wood>=3&&player.stone>=2){player.wood-=3;player.stone-=2;hasAxe=true;tool='machado';beep(900,0.15);} else alert('Precisa de 3 madeiras + 2 pedras!'); updateHUD(); };
+document.getElementById('rSword').onclick=()=>{ if(hasSword){tool='espada';updateHUD();return;} if(player.wood>=2&&player.stone>=3){player.wood-=2;player.stone-=3;hasSword=true;tool='espada';beep(900,0.15);} else alert('Precisa de 2 madeiras + 3 pedras!'); updateHUD(); };
+document.getElementById('rApple').onclick=()=>{ if(player.flower>=1&&player.hp<player.maxHp){player.flower--;player.hp=Math.min(player.maxHp,player.hp+2);beep(600,0.1);} else alert('Precisa de 1 flor e estar machucado!'); updateHUD(); };
+
+function startGame(){
+  document.getElementById('menu').style.display='none';
+  state='play';
+  beep(440,0.1); setTimeout(()=>beep(660,0.1),120);
+}
+document.getElementById('start').onclick=startGame;
+reset(); state='menu'; updateHUD();
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
