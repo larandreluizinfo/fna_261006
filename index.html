@@ -35,12 +35,12 @@
 </style>
 </head>
 <body>
-<h1>⛏️ MINICRAFT: LILO & STITCH ⛏️</h1>
+<h1>⛏️ MINICRAFT FPS: LILO & STITCH 👊</h1>
 <div class="sub">Criado por <b>Felipe 5ºB</b>, <b>Nicole 5ºB</b> e <b>Alice 5ºA</b> — <a style="color:#ffe066" href="https://larandreluizinfo.github.io/fna_261006/">jogar no Pages</a></div>
 <div id="wrap">
   <canvas id="game" width="480" height="320"></canvas>
   <div id="craft">
-    <h2>🔨 Criar (tecla E fecha)</h2>
+    <h2>🔨 Criar (tecla C fecha)</h2>
     <button id="rTorch">🔥 Tocha (2 madeira)</button>
     <button id="rAxe">🪓 Machado (3 mad + 2 pedra)</button>
     <button id="rSword">🗡️ Espada (2 mad + 3 pedra)</button>
@@ -48,15 +48,16 @@
     <div style="font-size:11px;margin-top:6px" id="invCraft"></div>
   </div>
   <div id="menu">
-    <h2>MINICRAFT: LILO & STITCH</h2>
-    <p>🌺 Jogue com a <b>Lilo</b> ou com o <b>Stitch</b>! O outro vira seu companheiro e ajuda a lutar.<br>
-    🌳 Quebre <b>árvores</b> e <b>pedras</b> para coletar recursos.<br>
+    <h2>MINICRAFT: LILO & STITCH FPS</h2>
+    <p>👁️ Agora em <b>PRIMEIRA PESSOA</b> com <b>punhos</b>!<br>
+    🌺 Jogue com a <b>Lilo</b> ou com o <b>Stitch</b>! O outro vira seu companheiro.<br>
+    🌳 Olhe para <b>árvores</b> e <b>pedras</b> e soque para coletar.<br>
     🌙 Sobreviva aos <b>monstros da noite</b>!</p>
     <div id="charSel">
       <button id="pickLilo" class="sel">🌺 LILO</button>
       <button id="pickStitch">💙 STITCH</button>
     </div>
-    <p>🎮 <b>WASD / setas</b> andar • <b>ESPAÇO</b> quebrar/atacar • <b>E</b> criar • <b>T</b> tocha • <b>1/2/3</b> ferramenta</p>
+    <p>🎮 <b>W / ↑</b> frente • <b>S / ↓</b> trás • <b>A / ←</b> e <b>D / →</b> girar • <b>Q / E</b> lado • <b>ESPAÇO / clique</b> socar • <b>C</b> criar • <b>T</b> tocha • <b>1/2/3</b> ferramenta • arraste o mouse para olhar</p>
     <p>📱 No celular use os botões na tela.</p>
     <p>👦👧 Por Felipe 5ºB, Nicole 5ºB e Alice 5ºA</p>
     <button id="start">▶ JOGAR</button>
@@ -86,8 +87,8 @@
   </div>
 </div>
 <div id="help">
-<b>Como jogar:</b> Escolha <b>Lilo 🌺</b> ou <b>Stitch 💙</b> — o outro anda com você e ataca monstros!
-Ande com <kbd>WASD</kbd>, encoste numa árvore/pedra e aperte <kbd>ESPAÇO</kbd> até quebrar.
+<b>Como jogar (1ª pessoa):</b> Escolha <b>Lilo 🌺</b> ou <b>Stitch 💙</b> e veja seus <b>punhos</b> na tela!
+Ande com <kbd>W</kbd><kbd>S</kbd>, gire com <kbd>A</kbd><kbd>D</kbd> ou arraste o mouse. Mire e aperte <kbd>ESPAÇO</kbd> para socar árvores/pedras e monstros.
 À noite nascem <b>slimes</b> e <b>zumbis</b> — bata neles! Com <kbd>E</kbd> abra o menu de criação.
 Coloque tochas com <kbd>T</kbd> para iluminar a noite. Se a vida acabar, você recomeça. Recorde fica salvo!
 </div>
@@ -139,7 +140,7 @@ function genWorld(){
 }
 function reset(){
   genWorld();
-  player={x:W/2+0.5, y:H/2+0.5, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0, hero};
+  player={x:W/2+0.5, y:H/2+0.5, a:-Math.PI/2, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0, hero};
   // Companheiro: se você é Lilo, Stitch te segue (e vice-versa)
   let bkind = hero==='lilo' ? 'stitch' : 'lilo';
   buddy={x:player.x-1, y:player.y, kind:bkind, face:0, atkCd:0};
@@ -241,14 +242,21 @@ function loop(ts){
   timeOfDay+=dt/120; // 1 dia = 2 min
   if(timeOfDay>=1){ timeOfDay=0; day++; beep(880,0.2); }
   atkCd-=dt; hurtCd-=dt;
-  // movimento
-  let mx=0,my=0;
-  if(keys['arrowup']||keys['w'])my-=1;
-  if(keys['arrowdown']||keys['s'])my+=1;
-  if(keys['arrowleft']||keys['a'])mx-=1;
-  if(keys['arrowright']||keys['d'])mx+=1;
-  if(mx||my){ let l=Math.hypot(mx,my); mx/=l; my/=l;
-    player.dirX=mx; player.dirY=my;
+  // ===== movimento PRIMEIRA PESSOA =====
+  // W/Up = frente, S/Down = tras, A/Left = girar esq, D/Right = girar dir, Q/E = strafe
+  if(keys['a']||keys['arrowleft']) player.a-=2.4*dt;
+  if(keys['d']||keys['arrowright']) player.a+=2.4*dt;
+  player.dirX=Math.cos(player.a); player.dirY=Math.sin(player.a);
+  let fw=0, st=0;
+  if(keys['w']||keys['arrowup'])fw+=1;
+  if(keys['s']||keys['arrowdown'])fw-=1;
+  if(keys['q'])st-=1;
+  if(keys['e']&&document.getElementById('craft').style.display!=='block')st+=1;
+  if(fw||st){
+    let fx=player.dirX, fy=player.dirY;
+    let sx2=-fy, sy2=fx;
+    let mx=fx*fw+sx2*st, my=fy*fw+sy2*st;
+    let l=Math.hypot(mx,my)||1; mx/=l; my/=l;
     let sp=4.2*dt, nx=player.x+mx*sp, ny=player.y+my*sp;
     if(!solid(tileAt(nx,player.y))) player.x=nx;
     if(!solid(tileAt(player.x,ny))) player.y=ny;
@@ -289,65 +297,148 @@ function loop(ts){
 }
 
 function draw(){
-  let camX=player.x-VW/2, camY=player.y-VH/2;
-  let sx=0, sy=0;
-  if(shake>0){ sx=(Math.random()-0.5)*0.4; sy=(Math.random()-0.5)*0.4; }
-  ctx.save();
-  ctx.fillStyle='#5da54a'; ctx.fillRect(0,0,cv.width,cv.height);
-  for(let vy=0;vy<VH+1;vy++)for(let vx=0;vx<VW+1;vx++){
-    let wx=Math.floor(camX+vx), wy=Math.floor(camY+vy);
-    if(wx<0||wy<0||wx>=W||wy>=H) continue;
-    let t=map[wy*W+wx];
-    let dx=Math.round((vx-(camX%1))*TS+sx*TS), dy=Math.round((vy-(camY%1))*TS+sy*TS);
-    drawTile(t,dx,dy,wx,wy);
-  }
-  // inimigos
-  for(let e of enemies){
-    let dx=(e.x-camX)*TS+sx*TS, dy=(e.y-camY)*TS+sy*TS;
-    let bob=Math.sin(e.t*6)*2;
-    ctx.fillStyle='#0008'; ctx.fillRect(dx-6,dy+2,12,4);
-    if(e.type==='zumbi'){ ctx.fillStyle='#3f6b3f'; ctx.fillRect(dx-7,dy-8+bob,14,12); ctx.fillStyle='#7ec87e'; ctx.fillRect(dx-7,dy-8+bob,14,4); ctx.fillStyle='#ff0000'; ctx.fillRect(dx-4,dy-5+bob,3,3); ctx.fillRect(dx+1,dy-5+bob,3,3); }
-    else { ctx.fillStyle='#66dd66'; ctx.fillRect(dx-6,dy-6+bob,12,10); ctx.fillStyle='#fff'; ctx.fillRect(dx-4,dy-3+bob,3,3); ctx.fillRect(dx+1,dy-3+bob,3,3); ctx.fillStyle='#000'; ctx.fillRect(dx-3,dy-2+bob,2,2); ctx.fillRect(dx+2,dy-2+bob,2,2); }
-  }
-  // companheiro
-  if(buddy){
-    let bx=(buddy.x-camX)*TS+sx*TS, by=(buddy.y-camY)*TS+sy*TS;
-    if(buddy.kind==='stitch') drawStitch(bx,by,buddy.face);
-    else drawLilo(bx,by,buddy.face);
-  }
-  // jogador
-  let px=(player.x-camX)*TS+sx*TS, py=(player.y-camY)*TS+sy*TS;
-  if(player.hero==='stitch') drawStitch(px,py,player.face);
-  else drawLilo(px,py,player.face);
-  // nome do heroi
-  ctx.fillStyle='#fff'; ctx.font='6px monospace'; ctx.textAlign='center';
-  ctx.fillText(player.hero==='stitch'?'STITCH':'LILO', px, py-13);
-  // ferramenta na mão
-  let hx=px+player.dirX*10, hy=py+player.dirY*10;
-  if(tool==='espada'){ ctx.fillStyle='#ccc'; ctx.fillRect(hx-1,hy-6,3,10); ctx.fillStyle='#8b5a2b'; ctx.fillRect(hx-1,hy+4,3,3); }
-  else if(tool==='machado'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(hx-1,hy-4,3,9); ctx.fillStyle='#999'; ctx.fillRect(hx-4,hy-7,9,5); }
-  // particulas
-  for(let p of parts){ ctx.fillStyle=p.c; ctx.fillRect((p.x-camX)*TS, (p.y-camY)*TS, 3,3); }
-  ctx.restore();
-  // noite
-  let d=darkness();
-  if(d>0){
-    ctx.fillStyle=`rgba(0,0,40,${d})`; ctx.fillRect(0,0,cv.width,cv.height);
-    // luz das tochas + jogador leve
-    ctx.save(); ctx.globalCompositeOperation='lighter';
-    function light(wx,wy,r,a){
-      let dx=(wx-camX)*TS, dy=(wy-camY)*TS;
-      let g=ctx.createRadialGradient(dx,dy,4,dx,dy,r*TS);
-      g.addColorStop(0,`rgba(255,200,80,${a})`); g.addColorStop(1,'rgba(255,200,80,0)');
-      ctx.fillStyle=g; ctx.fillRect(dx-r*TS,dy-r*TS,r*TS*2,r*TS*2);
+  // ===== PRIMEIRA PESSOA (raycasting estilo Minecraft) =====
+  const WW=cv.width, HH=cv.height;
+  const FOV=Math.PI/3;
+  let shX=0, shY=0;
+  if(shake>0){ shX=(Math.random()-0.5)*8; shY=(Math.random()-0.5)*8; }
+  // ceu / chao conforme hora
+  const night=isNight(), dd=darkness();
+  let sky = night? '#0b1026' : (timeOfDay>0.6&&timeOfDay<0.78 ? '#ff9d5c' : '#7ec0ee');
+  let floor = night? '#1d3319' : '#5da54a';
+  ctx.fillStyle=sky; ctx.fillRect(0,0,WW,HH/2+shY);
+  ctx.fillStyle=floor; ctx.fillRect(0,HH/2+shY,WW,HH/2);
+  // sol/lua simples
+  ctx.fillStyle= night? '#f4f1de' : '#ffe066';
+  ctx.beginPath(); ctx.arc(WW*0.8+shX, HH*0.18+shY, night?10:14, 0, 7); ctx.fill();
+  const zbuf=new Float32Array(WW);
+  const step=2;
+  for(let x=0;x<WW;x+=step){
+    const cam=(x/WW-0.5)*FOV;
+    const ra=player.a+cam;
+    const rdx=Math.cos(ra), rdy=Math.sin(ra);
+    // DDA
+    let mx=Math.floor(player.x), my=Math.floor(player.y);
+    const ddx=Math.abs(1/(rdx||1e-6)), ddy=Math.abs(1/(rdy||1e-6));
+    let sdx, sdy, stx, sty;
+    if(rdx<0){ stx=-1; sdx=(player.x-mx)*ddx; } else { stx=1; sdx=(mx+1-player.x)*ddx; }
+    if(rdy<0){ sty=-1; sdy=(player.y-my)*ddy; } else { sty=1; sdy=(my+1-player.y)*ddy; }
+    let hit=0, side=0, t=0, guard=0;
+    while(!hit&&guard++<64){
+      if(sdx<sdy){ t=sdx; sdx+=ddx; mx+=stx; side=0; }
+      else { t=sdy; sdy+=ddy; my+=sty; side=1; }
+      const tt=tileAt(mx,my);
+      if(tt===1||tt===2||tt===4) hit=tt;
     }
-    light(player.x,player.y,2,0.25);
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(map[y*W+x]===6){
-      let dx=(x+0.5-camX)*TS, dy=(y+0.5-camY)*TS;
-      if(dx>-50&&dy>-50&&dx<cv.width+50&&dy<cv.height+50) light(x+0.5,y+0.5,3.5,0.8);
+    if(!hit){ zbuf[x]=99; continue; }
+    let dist=t*Math.cos(cam); dist=Math.max(0.1,dist);
+    zbuf[x]=dist; for(let k=1;k<step;k++) zbuf[x+k]=dist;
+    const wh=Math.min(HH*3, (HH*0.9)/dist);
+    const wy0=HH/2-wh/2+shY;
+    // textura: fatia vertical da textura 16x16
+    let tex = hit===2? TEX.stone[(mx+my)&3] : hit===4? TEX.water[0] : TEX.tree[(mx+my)&1];
+    let wallX = side===0? (player.y+t*rdy) : (player.x+t*rdx);
+    wallX-=Math.floor(wallX);
+    let tx=Math.floor(wallX*16); if((side===0&&rdx>0)||(side===1&&rdy<0)) tx=15-tx;
+    const shade = side===1? 0.82 : 1;
+    const fog = Math.min(0.75, dist/10);
+    ctx.drawImage(tex, tx,0,1,16, x+shX, wy0, step, wh);
+    ctx.fillStyle=`rgba(0,0,0,${(1-shade)*0.9 + fog*0.7 + dd*0.5})`;
+    ctx.fillRect(x+shX, wy0, step, wh);
+  }
+  // sprites (inimigos + companheiro) em 3D
+  function sprite(sx,sy,drawFn,size){
+    const dx=sx-player.x, dy=sy-player.y;
+    const dist=Math.hypot(dx,dy);
+    if(dist<0.2||dist>14) return;
+    const ang=Math.atan2(dy,dx)-player.a;
+    let a=((ang+Math.PI*3)%(Math.PI*2))-Math.PI;
+    if(Math.abs(a)>FOV/2+0.3) return;
+    const scrX=(0.5+a/FOV)*WW;
+    const sz=Math.min(HH*2.2,(size||60)/dist);
+    const col=Math.floor(scrX);
+    if(col>=0&&col<WW&&zbuf[col]<dist-0.15) return; // ocluido
+    ctx.save(); ctx.translate(scrX+shX, HH/2+shY+sz*0.18);
+    const s=sz/22;
+    ctx.scale(s,s);
+    drawFn(0,0,performance.now()/300);
+    ctx.restore();
+  }
+  const sprs=[];
+  for(let e of enemies) sprs.push({d:Math.hypot(e.x-player.x,e.y-player.y), e});
+  sprs.sort((a,b)=>b.d-a.d);
+  for(let s of sprs){
+    const e=s.e;
+    sprite(e.x,e.y,(x,y,tm)=>{
+      if(e.type==='zumbi'){ ctx.fillStyle='#3f6b3f'; ctx.fillRect(-7,-14,14,14); ctx.fillStyle='#7ec87e'; ctx.fillRect(-7,-14,14,5); ctx.fillStyle='red'; ctx.fillRect(-4,-10,3,3); ctx.fillRect(1,-10,3,3); }
+      else { ctx.fillStyle='#66dd66'; ctx.fillRect(-6,-10,12,10); ctx.fillStyle='#fff'; ctx.fillRect(-4,-7,3,3); ctx.fillRect(1,-7,3,3); ctx.fillStyle='#000'; ctx.fillRect(-3,-6,2,2); ctx.fillRect(2,-6,2,2); }
+    }, 52);
+  }
+  if(buddy) sprite(buddy.x,buddy.y,(x,y,tm)=>{ if(buddy.kind==='stitch') drawStitch(x,y,tm); else drawLilo(x,y,tm); }, 56);
+  // mira
+  ctx.fillStyle='#fff'; ctx.fillRect(WW/2-1,HH/2-1,3,3);
+  ctx.fillStyle='#0008'; ctx.fillRect(WW/2-1,HH/2-1,3,1);
+  // noite: vinheta
+  if(dd>0){ ctx.fillStyle=`rgba(0,0,40,${dd*0.7})`; ctx.fillRect(0,0,WW,HH); }
+  // ===== PUNHOS REALISTAS em primeira pessoa =====
+  drawFists(atkCd>0 ? (1-atkCd/0.28) : 0);
+  // minimapa
+  drawMini();
+}
+function drawFists(punch){
+  // punch: 0 repouso .. 0.5 soco .. volta. atkCd vai de 0.28->0
+  const WW=cv.width, HH=cv.height;
+  const skin = player.hero==='stitch' ? {base:'#3a6fd8', dark:'#274b9b', light:'#5d8df0', nail:'#bcd2ff'} : {base:'#e8b08a', dark:'#b97e5a', light:'#f7cfae', nail:'#ffe9d6'};
+  // sobe quando soca
+  const p = punch>0 ? Math.sin(punch*Math.PI) : 0;
+  const bob = Math.sin(player.face*0.5)*2;
+  function fist(cx,cy,s,mirror,pw){
+    ctx.save(); ctx.translate(cx,cy+p* -26 + bob); ctx.scale(mirror?-s:s,s);
+    // antebraco
+    ctx.fillStyle=skin.base; ctx.fillRect(-16,-34,32,44);
+    ctx.fillStyle=skin.dark; ctx.fillRect(-16,-34,5,44); ctx.fillRect(11,-34,5,44);
+    // punho (nós dos dedos)
+    ctx.fillStyle=skin.base;
+    ctx.beginPath(); ctx.roundRect(-20,-58,40,30,9); ctx.fill();
+    ctx.fillStyle=skin.light; ctx.fillRect(-18,-56,36,8);
+    // dedos
+    ctx.fillStyle=skin.dark;
+    for(let i=0;i<4;i++) ctx.fillRect(-16+i*9,-52,2,20);
+    ctx.fillStyle=skin.base; ctx.fillRect(-19,-34,38,10);
+    // polegar
+    ctx.fillStyle=skin.base; ctx.beginPath(); ctx.roundRect(8,-38,14,16,5); ctx.fill();
+    ctx.fillStyle=skin.dark; ctx.fillRect(10,-36,2,12);
+    // ferramenta na mão em 1ª pessoa
+    if(tool==='espada'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(-3,-96,7,40); ctx.fillStyle='#cfcfcf'; ctx.fillRect(-5,-140,11,46); ctx.fillStyle='#fff'; ctx.fillRect(-5,-140,4,46); }
+    if(tool==='machado'){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(-3,-100,7,48); ctx.fillStyle='#9a9a9a'; ctx.fillRect(-16,-116,34,16); ctx.fillStyle='#ccc'; ctx.fillRect(-16,-116,34,5); }
+    if(pw){ // brilho do soco
+      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.roundRect(-20,-58,40,30,9); ctx.fill();
     }
     ctx.restore();
   }
+  const s=WW/480;
+  fist(WW*0.32, HH*0.98, 1.5*s, false, punch>0);
+  fist(WW*0.68, HH*0.98, 1.5*s, true, punch>0&&punch>0.3);
+}
+function drawMini(){
+  const S=84, ox=cv.width-S-6, oy=6;
+  ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(ox-2,oy-2,S+4,S+4);
+  const sc=S/W;
+  for(let y=0;y<H;y+=1)for(let x=0;x<W;x+=1){
+    const t=map[y*W+x];
+    if(t===0) continue;
+    ctx.fillStyle= t===1?'#2d7d1e': t===2?'#999': t===4?'#3f76e4': t===3?'#dbd3a0': t===6?'#ffaa00':'#ff88cc';
+    ctx.fillRect(ox+x*sc,oy+y*sc,1.4,1.4);
+  }
+  // jogador + visão
+  ctx.fillStyle='#ffe066';
+  ctx.fillRect(ox+player.x*sc-1,oy+player.y*sc-1,3,3);
+  ctx.strokeStyle='#ffe066'; ctx.beginPath();
+  ctx.moveTo(ox+player.x*sc,oy+player.y*sc);
+  ctx.lineTo(ox+(player.x+Math.cos(player.a)*4)*sc, oy+(player.y+Math.sin(player.a)*4)*sc);
+  ctx.stroke();
+  if(buddy){ ctx.fillStyle='#fff'; ctx.fillRect(ox+buddy.x*sc-1,oy+buddy.y*sc-1,2,2); }
+  for(let e of enemies){ ctx.fillStyle=e.type==='zumbi'?'#ff3333':'#66ff66'; ctx.fillRect(ox+e.x*sc-1,oy+e.y*sc-1,2,2); }
 }
 function drawLilo(dx,dy,face){
   let walk=Math.sin(face)*2;
@@ -461,12 +552,12 @@ function gameOver(){
   beep(80,0.5,'sawtooth');
 }
 
-// input
+// input PRIMEIRA PESSOA
 addEventListener('keydown',e=>{
   let k=e.key.toLowerCase();
   keys[k=== ' '?' ':k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k)) e.preventDefault();
-  if(k==='e') toggleCraft();
+  if(k==='c'||k==='f') toggleCraft();
   if(k==='t') placeTorch();
   if(k==='1') tool='mao';
   if(k==='2'&&hasAxe) tool='machado';
@@ -476,15 +567,18 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{ keys[e.key.toLowerCase()===' '?' ':e.key.toLowerCase()]=false; });
 function toggleCraft(){ const c=document.getElementById('craft'); c.style.display=c.style.display==='block'?'none':'block'; }
+let dragX=null;
 cv.addEventListener('pointerdown',e=>{
   if(state!=='play')return;
-  const r=cv.getBoundingClientRect();
-  let cx=(e.clientX-r.left)/r.width*cv.width, cy=(e.clientY-r.top)/r.height*cv.height;
-  // mira: ajusta direção
-  let dx=cx-cv.width/2, dy=cy-cv.height/2;
-  if(Math.abs(dx)>Math.abs(dy)){ player.dirX=Math.sign(dx); player.dirY=0; } else { player.dirY=Math.sign(dy); player.dirX=0; }
+  dragX=e.clientX;
   attack();
 });
+addEventListener('pointermove',e=>{
+  if(dragX===null||state!=='play') return;
+  const dx=e.clientX-dragX;
+  if(Math.abs(dx)>2 && e.buttons){ player.a+=dx*0.005; dragX=e.clientX; }
+});
+addEventListener('pointerup',()=>dragX=null);
 function bindHold(id,key){
   const el=document.querySelector(`[data-k="${key}"]`); if(!el)return;
   const on=e=>{e.preventDefault(); keys[key==='act'?' ':key]=true; if(key==='act')attack();};
