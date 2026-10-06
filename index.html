@@ -37,7 +37,7 @@
 </style>
 </head>
 <body>
-<h1>⛏️ MINICRAFT FPS: LILO & STITCH 👊</h1>
+<h1>⛏️ MINICRAFT 3D: LILO & STITCH 👊</h1>
 <div class="sub">Criado por <b>Felipe 5ºB</b>, <b>Nicole 5ºB</b> e <b>Alice 5ºA</b> — <a style="color:#ffe066" href="https://larandreluizinfo.github.io/fna_261006/">jogar no Pages</a></div>
 <div id="wrap">
   <canvas id="game" width="640" height="360"></canvas>
@@ -50,8 +50,8 @@
     <div style="font-size:11px;margin-top:6px" id="invCraft"></div>
   </div>
   <div id="menu">
-    <h2>MINICRAFT: LILO & STITCH FPS</h2>
-    <p>👁️ Agora em <b>PRIMEIRA PESSOA</b> com <b>punhos</b>!<br>
+    <h2>MINICRAFT 3D: LILO & STITCH</h2>
+    <p>🧊 Agora em <b>3D</b> com <b>punhos</b>!<br>
     🌺 Jogue com a <b>Lilo</b> ou com o <b>Stitch</b>! O outro vira seu companheiro.<br>
     🌳 Olhe para <b>árvores</b> e <b>pedras</b> e soque para coletar.<br>
     🌙 Sobreviva aos <b>monstros da noite</b>!</p>
@@ -334,15 +334,58 @@ function draw(){
   const FOV=Math.PI/3;
   let shX=0, shY=0;
   if(shake>0){ shX=(Math.random()-0.5)*8; shY=(Math.random()-0.5)*8; }
-  // ceu / chao conforme hora
+  // ceu 3D com degradê + sol/lua que andam + estrelas + chão com perspectiva
   const night=isNight(), dd=darkness();
-  let sky = night? '#0b1026' : (timeOfDay>0.6&&timeOfDay<0.78 ? '#ff9d5c' : '#7ec0ee');
-  let floor = night? '#1d3319' : '#5da54a';
-  ctx.fillStyle=sky; ctx.fillRect(0,0,WW,HH/2+shY);
-  ctx.fillStyle=floor; ctx.fillRect(0,HH/2+shY,WW,HH/2);
-  // sol/lua simples
+  const bobY=Math.sin(player.face*0.9)*2.5;
+  const horizon=Math.round(HH/2+shY+bobY);
+  const tanH=Math.tan(FOV/2);
+  if(night){
+    const g=ctx.createLinearGradient(0,0,0,horizon);
+    g.addColorStop(0,'#05081a'); g.addColorStop(1,'#131b3d');
+    ctx.fillStyle=g; ctx.fillRect(0,0,WW,horizon);
+    ctx.fillStyle='#fff';
+    for(let i=0;i<70;i++){ const sx=(h2(i,7,1)*WW)|0, sy=(h2(i,13,2)*horizon)|0; const tw=0.5+0.5*Math.sin(Date.now()/400+i); if(tw>0.4) ctx.fillRect(sx,sy,2,2); }
+  } else if(timeOfDay>0.6&&timeOfDay<0.8){
+    const g=ctx.createLinearGradient(0,0,0,horizon);
+    g.addColorStop(0,'#5a8fd6'); g.addColorStop(1,'#ff9d5c');
+    ctx.fillStyle=g; ctx.fillRect(0,0,WW,horizon);
+  } else {
+    const g=ctx.createLinearGradient(0,0,0,horizon);
+    g.addColorStop(0,'#4a90d9'); g.addColorStop(1,'#9fd4f5');
+    ctx.fillStyle=g; ctx.fillRect(0,0,WW,horizon);
+  }
+  // sol / lua cruzando o céu conforme a hora
+  const sunP=timeOfDay; // 0..1
+  const sunX=WW*(0.1+0.8*((sunP>0.75? sunP-0.75 : sunP+0.25)/1%1));
+  const sunY=horizon-20-Math.sin(((sunP%1))*Math.PI*2)*10-Math.abs(horizon-40)/2;
   ctx.fillStyle= night? '#f4f1de' : '#ffe066';
-  ctx.beginPath(); ctx.arc(WW*0.8+shX, HH*0.18+shY, night?10:14, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(sunX+shX, Math.max(14,sunY), night?10:15, 0, 7); ctx.fill();
+  if(!night){ ctx.fillStyle='rgba(255,240,150,0.35)'; ctx.beginPath(); ctx.arc(sunX+shX, Math.max(14,sunY), 22, 0, 7); ctx.fill(); }
+  // ===== CHÃO 3D (floor casting com textura) =====
+  const dirX0=Math.cos(player.a), dirY0=Math.sin(player.a);
+  const plX=-dirY0*tanH, plY=dirX0*tanH;
+  const r0x=dirX0-plX, r0y=dirY0-plY, r1x=dirX0+plX, r1y=dirY0+plY;
+  const FS=4;
+  for(let y=horizon; y<HH; y+=FS){
+    const p=y-horizon+0.5;
+    if(p<=0) continue;
+    const rowD=(0.5*HH)/p;
+    if(rowD>12){ ctx.fillStyle=night?'#16280f':'#4e8f3e'; ctx.fillRect(0,y,WW,Math.min(FS,HH-y)); continue; }
+    const stx=rowD*(r1x-r0x)/WW, sty=rowD*(r1y-r0y)/WW;
+    let fx=player.x+rowD*r0x, fy=player.y+rowD*r0y;
+    for(let x=0;x<WW;x+=FS){
+      const cx=Math.floor(fx), cy=Math.floor(fy);
+      const t=tileAt(cx,cy);
+      let pal;
+      if(t===3) pal=PAL.sand; else if(t===4) pal=PAL.water;
+      else pal=night?PAL.grassDark:PAL.grass;
+      const h=((cx*73856093)^(cy*19349663))>>>0;
+      const v=(Math.abs(Math.floor(fx*6)+Math.floor(fy*6)))%pal.length;
+      ctx.fillStyle=pal[(h+v)%pal.length];
+      ctx.fillRect(x,y,FS,Math.min(FS,HH-y));
+      fx+=stx*FS; fy+=sty*FS;
+    }
+  }
   const zbuf=new Float32Array(WW);
   const step=2;
   for(let x=0;x<WW;x+=step){
@@ -366,7 +409,7 @@ function draw(){
     let dist=t*Math.cos(cam); dist=Math.max(0.1,dist);
     zbuf[x]=dist; for(let k=1;k<step;k++) zbuf[x+k]=dist;
     const wh=Math.min(HH*3, (HH*0.9)/dist);
-    const wy0=HH/2-wh/2+shY;
+    const wy0=horizon-wh/2;
     // textura: fatia vertical da textura 16x16
     let tex = hit===2? TEX.stone[(mx+my)&3] : hit===4? TEX.water[0] : TEX.tree[(mx+my)&1];
     let wallX = side===0? (player.y+t*rdy) : (player.x+t*rdx);
@@ -390,14 +433,14 @@ function draw(){
     const sz=Math.min(HH*2.2,(size||60)/dist);
     const col=Math.floor(scrX);
     if(col>=0&&col<WW&&zbuf[col]<dist-0.15) return; // ocluido
-    ctx.save(); ctx.translate(scrX+shX, HH/2+shY+sz*0.18);
+    ctx.save(); ctx.translate(scrX+shX, horizon+sz*0.18);
     const s=sz/22;
     ctx.scale(s,s);
     drawFn(0,0,performance.now()/300);
     ctx.restore();
     if(label){ // plaquinha com nome em 1ª pessoa
       ctx.font='bold 11px monospace'; ctx.textAlign='center';
-      const ly=HH/2+shY+sz*0.18-sz*0.85;
+      const ly=horizon+sz*0.18-sz*0.85;
       const w=ctx.measureText(label).width+12;
       ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(scrX-w/2,ly-13,w,16);
       ctx.fillStyle=lcolor||'#ffe066'; ctx.fillText(label,scrX,ly);
