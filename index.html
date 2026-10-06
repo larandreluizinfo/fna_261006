@@ -20,6 +20,9 @@
   #menu h2 { font-size:28px; margin-bottom:8px; color:#ffe066; text-shadow:2px 2px 0 #000; }
   #menu p { font-size:13px; max-width:520px; margin:4px 0; line-height:1.4; }
   #menu button { margin-top:10px; font-size:18px; padding:10px 22px; cursor:pointer; font-family:inherit; background:#6abe30; border:3px solid #000; }
+  #charSel { display:flex; gap:8px; margin-top:8px; }
+  #charSel button { font-size:14px; padding:8px 10px; margin-top:0; background:#fff; }
+  #charSel button.sel { background:#ffe066; outline:3px solid #fff; }
   #touch { display:none; justify-content:space-between; width:min(96vw,960px); margin-top:6px; user-select:none; }
   @media (pointer:coarse) { #touch { display:flex; } }
   .dpad { display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(3,52px); gap:2px; }
@@ -32,7 +35,7 @@
 </style>
 </head>
 <body>
-<h1>⛏️ MINICRAFT 5º ANO ⛏️</h1>
+<h1>⛏️ MINICRAFT: LILO & STITCH ⛏️</h1>
 <div class="sub">Criado por <b>Felipe 5ºB</b>, <b>Nicole 5ºB</b> e <b>Alice 5ºA</b> — <a style="color:#ffe066" href="https://larandreluizinfo.github.io/fna_261006/">jogar no Pages</a></div>
 <div id="wrap">
   <canvas id="game" width="480" height="320"></canvas>
@@ -45,10 +48,14 @@
     <div style="font-size:11px;margin-top:6px" id="invCraft"></div>
   </div>
   <div id="menu">
-    <h2>MINICRAFT</h2>
-    <p>🌳 Quebre <b>árvores</b> e <b>pedras</b> para coletar recursos.<br>
-    🌙 Sobreviva aos <b>monstros da noite</b>!<br>
-    🔨 Crie ferramentas, coloque tochas e faça pontos.</p>
+    <h2>MINICRAFT: LILO & STITCH</h2>
+    <p>🌺 Jogue com a <b>Lilo</b> ou com o <b>Stitch</b>! O outro vira seu companheiro e ajuda a lutar.<br>
+    🌳 Quebre <b>árvores</b> e <b>pedras</b> para coletar recursos.<br>
+    🌙 Sobreviva aos <b>monstros da noite</b>!</p>
+    <div id="charSel">
+      <button id="pickLilo" class="sel">🌺 LILO</button>
+      <button id="pickStitch">💙 STITCH</button>
+    </div>
     <p>🎮 <b>WASD / setas</b> andar • <b>ESPAÇO</b> quebrar/atacar • <b>E</b> criar • <b>T</b> tocha • <b>1/2/3</b> ferramenta</p>
     <p>📱 No celular use os botões na tela.</p>
     <p>👦👧 Por Felipe 5ºB, Nicole 5ºB e Alice 5ºA</p>
@@ -79,7 +86,8 @@
   </div>
 </div>
 <div id="help">
-<b>Como jogar:</b> Ande com <kbd>WASD</kbd>, encoste numa árvore/pedra e aperte <kbd>ESPAÇO</kbd> até quebrar.
+<b>Como jogar:</b> Escolha <b>Lilo 🌺</b> ou <b>Stitch 💙</b> — o outro anda com você e ataca monstros!
+Ande com <kbd>WASD</kbd>, encoste numa árvore/pedra e aperte <kbd>ESPAÇO</kbd> até quebrar.
 À noite nascem <b>slimes</b> e <b>zumbis</b> — bata neles! Com <kbd>E</kbd> abra o menu de criação.
 Coloque tochas com <kbd>T</kbd> para iluminar a noite. Se a vida acabar, você recomeça. Recorde fica salvo!
 </div>
@@ -94,7 +102,8 @@ const VW = cv.width / TS, VH = cv.height / TS; // 30x20 tiles visiveis
 const W = 64, H = 64;
 // tiles: 0 grama 1 arvore 2 pedra 3 areia 4 agua 5 flor 6 tocha
 let map, mapHp;
-let player, enemies, parts, torches;
+let player, buddy, enemies, parts, torches;
+let hero = 'lilo'; // 'lilo' | 'stitch'
 let day, timeOfDay, score, state, shake;
 let keys = {};
 let tool = 'mao'; // mao | machado | espada
@@ -130,7 +139,10 @@ function genWorld(){
 }
 function reset(){
   genWorld();
-  player={x:W/2+0.5, y:H/2+0.5, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0};
+  player={x:W/2+0.5, y:H/2+0.5, dirX:0, dirY:1, hp:10, maxHp:10, wood:0, stone:0, flower:0, torch:1, face:0, hero};
+  // Companheiro: se você é Lilo, Stitch te segue (e vice-versa)
+  let bkind = hero==='lilo' ? 'stitch' : 'lilo';
+  buddy={x:player.x-1, y:player.y, kind:bkind, face:0, atkCd:0};
   enemies=[]; parts=[]; torches=[];
   day=1; timeOfDay=0.25; score=0; shake=0; tool='mao'; hasAxe=false; hasSword=false;
   updateHUD();
@@ -163,7 +175,7 @@ function updateHUD(){
   document.getElementById('hStone').textContent='🪨 '+player.stone;
   document.getElementById('hFlower').textContent='🌸 '+player.flower;
   document.getElementById('hTorch').textContent='🔥 '+player.torch;
-  document.getElementById('hTool').textContent= tool==='mao'?'✋ mão': tool==='machado'?'🪓 machado':'🗡️ espada';
+  document.getElementById('hTool').textContent= (player.hero==='stitch'?'💙 ':'🌺 ')+ (tool==='mao'?'✋ mão': tool==='machado'?'🪓 machado':'🗡️ espada');
   document.getElementById('hScore').textContent='⭐ '+score;
   document.getElementById('best').textContent = best>0?('🏆 Recorde: '+best):'';
   document.getElementById('invCraft').textContent='🪵'+player.wood+' 🪨'+player.stone+' 🌸'+player.flower+' 🔥'+player.torch;
@@ -256,6 +268,18 @@ function loop(ts){
       if(player.hp<=0){ gameOver(); } }
   }
   enemies=enemies.filter(e=>!e.dead);
+  // companheiro Lilo/Stitch segue e ajuda a atacar
+  if(buddy){
+    buddy.face+=dt*8; buddy.atkCd-=dt;
+    let dx=player.x-buddy.x, dy=player.y-buddy.y, d=Math.hypot(dx,dy)||1;
+    if(d>1.2){ let sp=4.6*dt; buddy.x+=dx/d*sp; buddy.y+=dy/d*sp; }
+    // ataca inimigo mais próximo do jogador
+    if(buddy.atkCd<=0){
+      let tgt=null, td=2.2;
+      for(let e of enemies){ let dd=Math.hypot(e.x-buddy.x,e.y-buddy.y); if(dd<td){tgt=e;td=dd;} }
+      if(tgt){ tgt.hp-= (buddy.kind==='stitch'?2:1); buddy.atkCd=0.6; burst(tgt.x,tgt.y,'#aef',4); beep(tgt.hp<=0?800:300,0.08); if(tgt.hp<=0) killE(tgt); }
+    }
+  }
   // particulas
   for(let p of parts){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.l-=dt; }
   parts=parts.filter(p=>p.l>0);
@@ -285,13 +309,19 @@ function draw(){
     if(e.type==='zumbi'){ ctx.fillStyle='#3f6b3f'; ctx.fillRect(dx-7,dy-8+bob,14,12); ctx.fillStyle='#7ec87e'; ctx.fillRect(dx-7,dy-8+bob,14,4); ctx.fillStyle='#ff0000'; ctx.fillRect(dx-4,dy-5+bob,3,3); ctx.fillRect(dx+1,dy-5+bob,3,3); }
     else { ctx.fillStyle='#66dd66'; ctx.fillRect(dx-6,dy-6+bob,12,10); ctx.fillStyle='#fff'; ctx.fillRect(dx-4,dy-3+bob,3,3); ctx.fillRect(dx+1,dy-3+bob,3,3); ctx.fillStyle='#000'; ctx.fillRect(dx-3,dy-2+bob,2,2); ctx.fillRect(dx+2,dy-2+bob,2,2); }
   }
+  // companheiro
+  if(buddy){
+    let bx=(buddy.x-camX)*TS+sx*TS, by=(buddy.y-camY)*TS+sy*TS;
+    if(buddy.kind==='stitch') drawStitch(bx,by,buddy.face);
+    else drawLilo(bx,by,buddy.face);
+  }
   // jogador
   let px=(player.x-camX)*TS+sx*TS, py=(player.y-camY)*TS+sy*TS;
-  let walk=Math.sin(player.face)*2;
-  ctx.fillStyle='#0008'; ctx.fillRect(px-7,py+4,14,4);
-  ctx.fillStyle='#ffcc99'; ctx.fillRect(px-6,py-6+walk*0.3,12,10); // corpo
-  ctx.fillStyle='#5b3a1e'; ctx.fillRect(px-6,py-10+walk*0.3,12,5); // cabelo
-  ctx.fillStyle='#000'; ctx.fillRect(px-3,py-2,2,2); ctx.fillRect(px+1,py-2,2,2);
+  if(player.hero==='stitch') drawStitch(px,py,player.face);
+  else drawLilo(px,py,player.face);
+  // nome do heroi
+  ctx.fillStyle='#fff'; ctx.font='6px monospace'; ctx.textAlign='center';
+  ctx.fillText(player.hero==='stitch'?'STITCH':'LILO', px, py-13);
   // ferramenta na mão
   let hx=px+player.dirX*10, hy=py+player.dirY*10;
   if(tool==='espada'){ ctx.fillStyle='#ccc'; ctx.fillRect(hx-1,hy-6,3,10); ctx.fillStyle='#8b5a2b'; ctx.fillRect(hx-1,hy+4,3,3); }
@@ -318,6 +348,27 @@ function draw(){
     }
     ctx.restore();
   }
+}
+function drawLilo(dx,dy,face){
+  let walk=Math.sin(face)*2;
+  ctx.fillStyle='#0008'; ctx.fillRect(dx-7,dy+4,14,4);
+  ctx.fillStyle='#e33'; ctx.fillRect(dx-6,dy-4+walk*0.2,12,9); // vestido vermelho
+  ctx.fillStyle='#fff'; ctx.fillRect(dx-4,dy-1+walk*0.2,8,3); // flor no vestido
+  ctx.fillStyle='#c98d64'; ctx.fillRect(dx-5,dy-10,10,7); // rosto
+  ctx.fillStyle='#111'; ctx.fillRect(dx-7,dy-12,14,5); ctx.fillRect(dx-7,dy-10,3,8); ctx.fillRect(dx+4,dy-10,3,8); // cabelo preto
+  ctx.fillStyle='#000'; ctx.fillRect(dx-3,dy-8,2,2); ctx.fillRect(dx+1,dy-8,2,2);
+  ctx.fillStyle='#ff88cc'; ctx.fillRect(dx+5,dy-11,3,3); // flor no cabelo
+}
+function drawStitch(dx,dy,face){
+  let walk=Math.sin(face)*2;
+  ctx.fillStyle='#0008'; ctx.fillRect(dx-8,dy+4,16,4);
+  ctx.fillStyle='#3a6fd8'; ctx.fillRect(dx-9,dy-12+walk*0.2,5,8); ctx.fillRect(dx+4,dy-12-walk*0.2,5,8); // orelhas grandes
+  ctx.fillStyle='#5d8df0'; ctx.fillRect(dx-8,dy-11+walk*0.2,3,5); ctx.fillRect(dx+5,dy-11-walk*0.2,3,5);
+  ctx.fillStyle='#3a6fd8'; ctx.fillRect(dx-6,dy-8,12,12); // corpo azul
+  ctx.fillStyle='#9fc0ff'; ctx.fillRect(dx-4,dy-2,8,5); // barriga
+  ctx.fillStyle='#fff'; ctx.fillRect(dx-5,dy-6,4,4); ctx.fillRect(dx+1,dy-6,4,4); // olhos
+  ctx.fillStyle='#000'; ctx.fillRect(dx-4,dy-5,2,2); ctx.fillRect(dx+2,dy-5,2,2);
+  ctx.fillStyle='#1e3f8f'; ctx.fillRect(dx-1,dy-2,2,2); // nariz
 }
 function drawTile(t,dx,dy,wx,wy){
   if(t===0){ ctx.fillStyle=((wx+wy)%2===0)?'#5da54a':'#57a047'; ctx.fillRect(dx,dy,TS,TS); }
@@ -385,11 +436,18 @@ document.getElementById('rSword').onclick=()=>{ if(hasSword){tool='espada';updat
 document.getElementById('rApple').onclick=()=>{ if(player.flower>=1&&player.hp<player.maxHp){player.flower--;player.hp=Math.min(player.maxHp,player.hp+2);beep(600,0.1);} else alert('Precisa de 1 flor e estar machucado!'); updateHUD(); };
 
 function startGame(){
+  player.hero=hero;
+  let bkind = hero==='lilo' ? 'stitch' : 'lilo';
+  buddy={x:player.x-1, y:player.y, kind:bkind, face:0, atkCd:0};
   document.getElementById('menu').style.display='none';
-  state='play';
+  state='play'; updateHUD();
   beep(440,0.1); setTimeout(()=>beep(660,0.1),120);
+  let msg = hero==='lilo' ? 'Oi! Eu sou a Lilo! Stitch vai te ajudar!' : 'Aloha! Eu sou o Stitch! Ohana!';
+  burst(player.x,player.y,'#ffe066',10);
 }
 document.getElementById('start').onclick=startGame;
+document.getElementById('pickLilo').onclick=(e)=>{ hero='lilo'; document.getElementById('pickLilo').classList.add('sel'); document.getElementById('pickStitch').classList.remove('sel'); beep(500,0.08); };
+document.getElementById('pickStitch').onclick=(e)=>{ hero='stitch'; document.getElementById('pickStitch').classList.add('sel'); document.getElementById('pickLilo').classList.remove('sel'); beep(300,0.08); };
 reset(); state='menu'; updateHUD();
 requestAnimationFrame(loop);
 </script>
